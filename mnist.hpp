@@ -85,10 +85,10 @@ void mnist_loader::copy(std::size_t id, float *x, float *t){
 	}
 
 	for (std::size_t j = 0; j < IMAGE_DIM * IMAGE_DIM; j++) {
-		x[IMAGE_DIM * IMAGE_DIM + j] = static_cast<float>(data[id * IMAGE_DIM * IMAGE_DIM + j]) / 255.0f;
+		x[j] = static_cast<float>(data[id * IMAGE_DIM * IMAGE_DIM + j]) / 255.0f;
 	}
-	for (std::size_t j = 0; j < 10; j++) {
-		t[10 + j] = (static_cast<int>(labels[id]) == j) ? 1.0f : 0.0f;
+	for (std::size_t j = 0; j < CLASS_SIZE; j++) {
+		t[j] = (static_cast<int>(labels[id]) == j) ? 1.0f : 0.0f;
 	}
 }
 #endif /* end of include guard */
