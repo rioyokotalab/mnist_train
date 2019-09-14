@@ -53,6 +53,36 @@ void softmax(float* const acted, const float* const pre_act, const std::size_t l
 	}
 }
 
+float compute_accuracy(const float* const forwarded_data, const float* const correct_data, const std::size_t size, const std::size_t minibatch_size) {
+	std::size_t num_correct = 0;
+	for (std::size_t mb = 0; mb < minibatch_size; mb++) {
+		std::size_t max_index = 0;
+		for (std::size_t i = 1; i < size; i++) {
+			if (forwarded_data[mb * size + i] > forwarded_data[mb * size + max_index]) {
+				max_index = i;
+			}
+		}
+		if (correct_data[max_index] > 0.5f) {
+			num_correct++;
+		}
+	}
+	return (float)num_correct / minibatch_size;
+}
+
+float compute_loss(const float* const forwarded_data, const float* const correct_data, const std::size_t size, const std::size_t minibatch_size) {
+	float loss = 0.0f;
+	for (std::size_t mb = 0; mb < minibatch_size; mb++) {
+		std::size_t correct_index = 0;
+		for (std::size_t i = 0; i < size; i++) {
+			if (correct_data[i] > 0.5f) {
+				correct_index = i;
+			}
+		}
+		loss += std::log(forwarded_data[correct_index]);
+	}
+	return loss / minibatch_size;
+}
+
 int main() {
 	mnist_loader train_data, test_data;
 	train_data.load("train-images-idx3-ubyte", "train-labels-idx1-ubyte");
