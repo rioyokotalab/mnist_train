@@ -3,7 +3,7 @@
 #include <fstream>
 #include <stdexcept>
 
-class MNISTLoader{
+class mnist_loader{
 	char *data;
 	char *labels;
 	inline int reverse(int n);
@@ -11,13 +11,14 @@ class MNISTLoader{
 public:
 	static const std::size_t IMAGE_DIM = 28;
 	static const std::size_t CLASS_SIZE = 10;
-	inline void load(std::string data_file_name,std::string labels_file_name);
-	inline void copy(std::size_t id,float *x,float *t);
-	MNISTLoader() : data(nullptr), labels(nullptr) {};
-	~MNISTLoader(){delete [] data; delete [] labels;};
+	void load(std::string data_file_name,std::string labels_file_name);
+	void copy(std::size_t id,float *x,float *t);
+	std::size_t get_num_data() const {return num_data;}
+	mnist_loader() : data(nullptr), labels(nullptr) {};
+	~mnist_loader(){delete [] data; delete [] labels;};
 };
 
-inline int MNISTLoader::reverse(int n) {
+inline int mnist_loader::reverse(int n) {
 	char a0,a1,a2,a3;
 	a0 = (n>>24) & 255;
 	a1 = (n>>16) & 255;
@@ -26,7 +27,7 @@ inline int MNISTLoader::reverse(int n) {
 	return ((int)a3 << 24) + ((int)a2 << 16) + ((int)a1 << 8) + a0;
 }
 
-inline void MNISTLoader::load(std::string data_file_name, std::string labels_file_name){
+void mnist_loader::load(std::string data_file_name, std::string labels_file_name){
 	std::ifstream image_ifs(data_file_name,std::ios::binary);
 	std::ifstream label_ifs(labels_file_name,std::ios::binary);
 
@@ -78,7 +79,7 @@ inline void MNISTLoader::load(std::string data_file_name, std::string labels_fil
 	label_ifs.close();
 }
 
-inline void MNISTLoader::copy(std::size_t id, float *x, float *t){
+void mnist_loader::copy(std::size_t id, float *x, float *t){
 	if (id >= num_data) {
 		std::runtime_error("No such a file : id = " + std::to_string(id));
 	}
