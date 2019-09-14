@@ -43,7 +43,7 @@ void softmax(float* const acted, const float* const pre_act, const std::size_t l
 	for (std::size_t mb = 0; mb < minibatch_size; mb++) {
 		float e_sum = 0;
 		for (std::size_t ls = 0; ls < layer_size; ls++) {
-			const float e = std::exp(pre_act[mb * layer_size + ls] - pre_act[mb * layer_size + ls]);
+			const float e = std::exp(pre_act[mb * layer_size + ls] - pre_act[mb * layer_size + 0]);
 			acted[mb * layer_size + ls] = e;
 			e_sum += e;
 		}
