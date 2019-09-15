@@ -5,6 +5,12 @@
 #include <iostream>
 
 namespace utils {
+inline void zero_init(float* const ptr, const std::size_t size) {
+	for (std::size_t i = 0; i < size; i++) {
+		ptr[i] = 0.0f;
+	}
+}
+
 inline void random_init(float* const ptr, const std::size_t size, const float min_r = -1.f, const float max_r = 1.f) {
 	std::mt19937 mt(std::random_device{}());
 	std::uniform_real_distribution<float> dist(min_r, max_r);
