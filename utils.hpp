@@ -27,8 +27,10 @@ inline void print_matrix(const float* const matrix, const std::size_t M, const s
 			const float v = matrix[m + n * ldm];
 			if (v < 0) {
 				std::printf("%e ", v);
-			} else {
+			} else if (v > 0) {
 				std::printf(" %e ", v);
+			} else {
+				std::printf(" %e ", 0.0f);
 			}
 		}
 		std::printf("\n");
