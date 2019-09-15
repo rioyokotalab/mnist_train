@@ -25,6 +25,36 @@ void matmul(float* const C, const float* const A, const float* const B, const st
 	}
 }
 
+void matmul_tn(float* const C, const float* const A, const float* const B, const std::size_t M, const std::size_t N, const std::size_t K) {
+	for (std::size_t m = 0; m < M; m++) {
+		for (std::size_t n = 0; n < N; n++) {
+			float sum = 0.0f;
+			for (std::size_t k = 0; k < K; k++) {
+				sum += A[k + m * K] * B[k + n * K];
+			}
+			C[m + M * n] = sum;
+		}
+	}
+}
+
+void gemm_nt(const float beta, float* const C, const float alpha, const float* const A, const float* const B, const std::size_t M, const std::size_t N, const std::size_t K) {
+	for (std::size_t m = 0; m < M; m++) {
+		for (std::size_t n = 0; n < N; n++) {
+			float sum = 0.0f;
+			for (std::size_t k = 0; k < K; k++) {
+				sum += A[m + k * M] * B[n + k * N];
+			}
+			C[m + M * n] = beta * C[m + M * n] + alpha * sum;
+		}
+	}
+}
+
+void elementwise_product(float* const C, const float* const A, const float* const B, const std::size_t size) {
+	for (std::size_t i = 0; i < size; i++) {
+		C[i] = A[i] * B[i];
+	}
+}
+
 void add_bias(float* const A, const float* const bias, const std::size_t layer_size, const std::size_t minibatch_size) {
 	for (std::size_t mb = 0; mb < minibatch_size; mb++) {
 		for (std::size_t ls = 0; ls < layer_size; ls++) {
