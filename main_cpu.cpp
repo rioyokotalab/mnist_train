@@ -4,14 +4,16 @@
 #include <mnist.hpp>
 #include <utils.hpp>
 
-constexpr std::size_t minibatch_size = 16;
-constexpr std::size_t num_iterations = 4;
+constexpr std::size_t minibatch_size = 64;
+constexpr std::size_t num_iterations = 1000;
 
 constexpr std::size_t input_size = mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM;
-constexpr std::size_t hidden_size = 60;
+constexpr std::size_t hidden_size = 100;
 constexpr std::size_t output_size = mnist_loader::CLASS_SIZE;
 
-constexpr float learning_rate = 0.01f;
+constexpr std::size_t print_info_interval = 20;
+
+constexpr float learning_rate = 0.5f;
 
 void matmul(float* const C, const float* const A, const float* const B, const std::size_t M, const std::size_t N, const std::size_t K) {
 	for (std::size_t m = 0; m < M; m++) {
@@ -63,15 +65,25 @@ void add_bias(float* const A, const float* const bias, const std::size_t layer_s
 	}
 }
 
-void ReLU(float* const acted, const float* const pre_act, const std::size_t size) {
-	for (std::size_t i = 0; i < size; i++) {
+void ReLU(float* const acted, const float* const pre_act, const std::size_t size, const std::size_t minibatch_size) {
+	for (std::size_t i = 0; i < size * minibatch_size; i++) {
 		acted[i] = std::max(0.0f, pre_act[i]);
+	}
+}
+
+void dReLU(float* const d_acted, const float* const pre_act, const std::size_t size, const std::size_t minibatch_size) {
+	for (std::size_t i = 0; i < size * minibatch_size; i++) {
+		if (pre_act[i] < 0.0f) {
+			d_acted[i] = 0.0f;
+		} else {
+			d_acted[i] = 1.0f;
+		}
 	}
 }
 
 void softmax(float* const acted, const float* const pre_act, const std::size_t layer_size, const std::size_t minibatch_size) {
 	for (std::size_t mb = 0; mb < minibatch_size; mb++) {
-		float e_sum = 0;
+		float e_sum = 0.0f;
 		for (std::size_t ls = 0; ls < layer_size; ls++) {
 			const float e = std::exp(pre_act[mb * layer_size + ls] - pre_act[mb * layer_size + 0]);
 			acted[mb * layer_size + ls] = e;
@@ -92,7 +104,7 @@ float compute_accuracy(const float* const forwarded_data, const float* const cor
 				max_index = i;
 			}
 		}
-		if (correct_data[max_index] > 0.5f) {
+		if (correct_data[mb * size + max_index] > 0.5f) {
 			num_correct++;
 		}
 	}
@@ -104,13 +116,33 @@ float compute_loss(const float* const forwarded_data, const float* const correct
 	for (std::size_t mb = 0; mb < minibatch_size; mb++) {
 		std::size_t correct_index = 0;
 		for (std::size_t i = 0; i < size; i++) {
-			if (correct_data[i] > 0.5f) {
+			if (correct_data[mb * size + i] > 0.5f) {
 				correct_index = i;
 			}
 		}
-		loss += std::log(forwarded_data[correct_index]);
+		loss -= std::log(forwarded_data[mb * size + correct_index]);
 	}
 	return loss / minibatch_size;
+}
+
+void compute_last_error(float* const last_error, const float* const last_act, const float* const correct_data, const std::size_t output_size, const std::size_t minibatch_size) {
+	for (std::size_t i = 0; i < output_size * minibatch_size; i++) {
+		last_error[i] = last_act[i] - correct_data[i];
+	}
+}
+
+void update_weight(float* const W, const float* const error, const float* const acted, const std::size_t W_M, const std::size_t W_N, const std::size_t minibatch_size, const float learning_rate) {
+	gemm_nt(1.0f, W, - learning_rate / minibatch_size, error, acted, W_M, W_N, minibatch_size);
+}
+
+void update_bias(float* const bias, const float* const error, const std::size_t W_M, const std::size_t minibatch_size, const float learning_rate) {
+	for (std::size_t i = 0; i < W_M; i++) {
+		float sum = 0.0f;
+		for (std::size_t mb = 0; mb < minibatch_size; mb++) {
+			sum += error[mb * W_M + i];
+		}
+		bias[i] -= learning_rate / minibatch_size * sum;
+	}
 }
 
 int main() {
@@ -122,8 +154,10 @@ int main() {
 
 	float* const minibatch_hidden_data_pre = (float*)malloc(minibatch_size * hidden_size * sizeof(float));
 	float* const minibatch_hidden_data = (float*)malloc(minibatch_size * hidden_size * sizeof(float));
+	float* const minibatch_hidden_error = (float*)malloc(minibatch_size * hidden_size * sizeof(float));
 	float* const minibatch_output_data_pre = (float*)malloc(minibatch_size * output_size * sizeof(float));
 	float* const minibatch_output_data = (float*)malloc(minibatch_size * output_size * sizeof(float));
+	float* const minibatch_output_error = (float*)malloc(minibatch_size * output_size * sizeof(float));
 
 	float* const layer0_weight = (float*)malloc(input_size * hidden_size * sizeof(float));
 	float* const layer0_bias = (float*)malloc(hidden_size * sizeof(float));
@@ -163,7 +197,7 @@ int main() {
 		ReLU(
 			minibatch_hidden_data,
 			minibatch_hidden_data_pre,
-			hidden_size * minibatch_size);
+			hidden_size, minibatch_size);
 
 		matmul(
 			minibatch_output_data_pre,
@@ -184,7 +218,24 @@ int main() {
 			minibatch_size
 			);
 
-		utils::print_matrix(minibatch_output_data, output_size, minibatch_size, output_size, "output");
+		//
+		// Backword
+		//
+		compute_last_error(minibatch_output_error, minibatch_output_data, minibatch_label_data, output_size, minibatch_size);
+		dReLU(minibatch_hidden_data_pre, minibatch_hidden_data_pre, hidden_size, minibatch_size);
+		matmul_tn(minibatch_hidden_error, layer1_weight, minibatch_output_error, hidden_size, minibatch_size, output_size);
+		elementwise_product(minibatch_hidden_error, minibatch_hidden_error, minibatch_hidden_data_pre, minibatch_size * hidden_size);
+
+		update_weight(layer1_weight, minibatch_output_error, minibatch_hidden_data,  output_size, hidden_size, minibatch_size, learning_rate);
+		update_weight(layer0_weight, minibatch_hidden_error, minibatch_image_data,  hidden_size, input_size, minibatch_size, learning_rate);
+		update_bias(layer1_bias, minibatch_output_error, output_size, minibatch_size, learning_rate);
+		update_bias(layer0_bias, minibatch_hidden_error, hidden_size, minibatch_size, learning_rate);
+
+		if (i % print_info_interval == (print_info_interval - 1)) {
+			const auto train_acc = compute_accuracy(minibatch_output_data, minibatch_label_data, output_size, minibatch_size);
+			const auto train_loss = compute_loss(minibatch_output_data, minibatch_label_data, output_size, minibatch_size);
+			std::printf("[%6lu] acc = %.3f \%, loss = %e\n", i, train_acc * 100.0f, train_loss);
+		}
 	}
 
 	free(minibatch_image_data);
