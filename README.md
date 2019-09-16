@@ -32,3 +32,13 @@ make
 
 ### 学習
 単純なSGD
+
+## ファイル構成
+- `main_cpu.cpp`  
+CPUで動作する学習器
+
+- `utils.hpp`  
+CPU/GPU共通で使用する関数群
+
+- `mnist.hpp`  
+MNIST読み込み用関数
