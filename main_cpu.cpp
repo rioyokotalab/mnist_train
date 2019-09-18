@@ -5,6 +5,7 @@
 #include <utils.hpp>
 
 constexpr std::size_t minibatch_size = 64;
+constexpr std::size_t test_size = 10000;
 constexpr std::size_t num_iterations = 1000;
 
 constexpr std::size_t input_size = mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM;
@@ -151,6 +152,8 @@ int main() {
 	test_data.load("t10k-images-idx3-ubyte", "t10k-labels-idx1-ubyte");
 	float* const minibatch_image_data = (float*)malloc(minibatch_size * mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM * sizeof(float));
 	float* const minibatch_label_data = (float*)malloc(minibatch_size * mnist_loader::CLASS_SIZE * sizeof(float));
+	float* const test_image_data = (float*)malloc(test_size * mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM * sizeof(float));
+	float* const test_label_data = (float*)malloc(test_size * mnist_loader::CLASS_SIZE * sizeof(float));
 
 	float* const minibatch_hidden_data_pre = (float*)malloc(minibatch_size * hidden_size * sizeof(float));
 	float* const minibatch_hidden_data = (float*)malloc(minibatch_size * hidden_size * sizeof(float));
@@ -158,6 +161,12 @@ int main() {
 	float* const minibatch_output_data_pre = (float*)malloc(minibatch_size * output_size * sizeof(float));
 	float* const minibatch_output_data = (float*)malloc(minibatch_size * output_size * sizeof(float));
 	float* const minibatch_output_error = (float*)malloc(minibatch_size * output_size * sizeof(float));
+	float* const test_hidden_data_pre = (float*)malloc(test_size * hidden_size * sizeof(float));
+	float* const test_hidden_data = (float*)malloc(test_size * hidden_size * sizeof(float));
+	float* const test_hidden_error = (float*)malloc(test_size * hidden_size * sizeof(float));
+	float* const test_output_data_pre = (float*)malloc(test_size * output_size * sizeof(float));
+	float* const test_output_data = (float*)malloc(test_size * output_size * sizeof(float));
+	float* const test_output_error = (float*)malloc(test_size * output_size * sizeof(float));
 
 	float* const layer0_weight = (float*)malloc(input_size * hidden_size * sizeof(float));
 	float* const layer0_bias = (float*)malloc(hidden_size * sizeof(float));
@@ -170,6 +179,11 @@ int main() {
 
 	std::mt19937 mt(std::random_device{}());
 	std::uniform_int_distribution<std::size_t> image_dist(0, train_data.get_num_data());
+
+	// copy test data
+	for (std::size_t i = 0; i < test_size; i++) {
+		test_data.copy(i, test_image_data + i * mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM, test_label_data + i * mnist_loader::CLASS_SIZE);
+	}
 
 	// training loop
 	for (std::size_t i = 0; i < num_iterations; i++) {
@@ -232,9 +246,46 @@ int main() {
 		update_bias(layer0_bias, minibatch_hidden_error, hidden_size, minibatch_size, learning_rate);
 
 		if (i % print_info_interval == (print_info_interval - 1)) {
+			matmul(
+				test_hidden_data_pre,
+				layer0_weight,
+				test_image_data,
+				hidden_size,
+				test_size,
+				input_size);
+			add_bias(
+				test_hidden_data_pre,
+				layer0_bias,
+				hidden_size,
+				test_size);
+			ReLU(
+				test_hidden_data,
+				test_hidden_data_pre,
+				hidden_size, test_size);
+
+			matmul(
+				test_output_data_pre,
+				layer1_weight,
+				test_hidden_data,
+				output_size,
+				test_size,
+				hidden_size);
+			add_bias(
+				test_output_data_pre,
+				layer1_bias,
+				output_size,
+				test_size);
+			softmax(
+				test_output_data,
+				test_output_data_pre,
+				output_size,
+				test_size
+				);
 			const auto train_acc = compute_accuracy(minibatch_output_data, minibatch_label_data, output_size, minibatch_size);
 			const auto train_loss = compute_loss(minibatch_output_data, minibatch_label_data, output_size, minibatch_size);
-			std::printf("[%6lu] acc = %.3f \%, loss = %e\n", i, train_acc * 100.0f, train_loss);
+			const auto test_acc = compute_accuracy(test_output_data, test_label_data, output_size, minibatch_size);
+			const auto test_loss = compute_loss(test_output_data, test_label_data, output_size, minibatch_size);
+			std::printf("[%6lu] train/acc = %.3f \%, train/loss = %e, test/acc = %.3f \%, test/loss = %e\n", i, train_acc * 100.0f, train_loss, test_acc * 100.0f, test_loss);
 		}
 	}
 
@@ -242,6 +293,14 @@ int main() {
 	free(minibatch_label_data);
 	free(minibatch_hidden_data);
 	free(minibatch_output_data);
+	free(minibatch_hidden_data_pre);
+	free(minibatch_output_data_pre);
+	free(test_image_data);
+	free(test_label_data);
+	free(test_hidden_data);
+	free(test_output_data);
+	free(test_hidden_data_pre);
+	free(test_output_data_pre);
 	free(layer0_weight);
 	free(layer0_bias);
 	free(layer1_weight);
