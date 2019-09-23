@@ -15,7 +15,7 @@ wget http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz
 ```
 3. extract MNIST dataset
 ```
-gnuzip *.gz
+gunzip *.gz
 ```
 4. build
 ```bash
