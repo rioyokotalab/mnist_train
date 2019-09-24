@@ -58,4 +58,13 @@ int main() {
 		num_passed++;
 	}
 	printf("%5lu / %5lu passed\n", num_passed, N);
+
+	// free
+	cudaFree(dA);
+	cudaFree(dB);
+	cudaFree(dC);
+	free(hA);
+	free(hB);
+	free(hC);
+	free(correct);
 }
