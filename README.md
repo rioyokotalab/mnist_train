@@ -25,6 +25,11 @@ make
 ```bash
 ./mnist_train_cpu
 ```
+or
+```
+qsub t3-job.sh
+```
+on TSUBAME3.0
 
 ## 学習器構造
 ### ネットワーク
