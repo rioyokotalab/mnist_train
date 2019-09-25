@@ -150,28 +150,51 @@ int main() {
 	mnist_loader train_data, test_data;
 	train_data.load("train-images-idx3-ubyte", "train-labels-idx1-ubyte");
 	test_data.load("t10k-images-idx3-ubyte", "t10k-labels-idx1-ubyte");
-	float* const minibatch_image_data = (float*)malloc(minibatch_size * mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM * sizeof(float));
-	float* const minibatch_label_data = (float*)malloc(minibatch_size * mnist_loader::CLASS_SIZE * sizeof(float));
-	float* const test_image_data = (float*)malloc(test_size * mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM * sizeof(float));
-	float* const test_label_data = (float*)malloc(test_size * mnist_loader::CLASS_SIZE * sizeof(float));
+	float* minibatch_image_data;
+	float* minibatch_label_data;
+	float* test_image_data;
+	float* test_label_data;
 
-	float* const minibatch_hidden_data_pre = (float*)malloc(minibatch_size * hidden_size * sizeof(float));
-	float* const minibatch_hidden_data = (float*)malloc(minibatch_size * hidden_size * sizeof(float));
-	float* const minibatch_hidden_error = (float*)malloc(minibatch_size * hidden_size * sizeof(float));
-	float* const minibatch_output_data_pre = (float*)malloc(minibatch_size * output_size * sizeof(float));
-	float* const minibatch_output_data = (float*)malloc(minibatch_size * output_size * sizeof(float));
-	float* const minibatch_output_error = (float*)malloc(minibatch_size * output_size * sizeof(float));
-	float* const test_hidden_data_pre = (float*)malloc(test_size * hidden_size * sizeof(float));
-	float* const test_hidden_data = (float*)malloc(test_size * hidden_size * sizeof(float));
-	float* const test_hidden_error = (float*)malloc(test_size * hidden_size * sizeof(float));
-	float* const test_output_data_pre = (float*)malloc(test_size * output_size * sizeof(float));
-	float* const test_output_data = (float*)malloc(test_size * output_size * sizeof(float));
-	float* const test_output_error = (float*)malloc(test_size * output_size * sizeof(float));
+	float* minibatch_hidden_data_pre;
+	float* minibatch_hidden_data;
+	float* minibatch_hidden_error;
+	float* minibatch_output_data_pre;
+	float* minibatch_output_data;
+	float* minibatch_output_error;
+	float* test_hidden_data_pre;
+	float* test_hidden_data;
+	float* test_hidden_error;
+	float* test_output_data_pre;
+	float* test_output_data;
+	float* test_output_error;
 
-	float* const layer0_weight = (float*)malloc(input_size * hidden_size * sizeof(float));
-	float* const layer0_bias = (float*)malloc(hidden_size * sizeof(float));
-	float* const layer1_weight = (float*)malloc(hidden_size * output_size * sizeof(float));
-	float* const layer1_bias = (float*)malloc(output_size * sizeof(float));
+	float* layer0_weight;
+	float* layer0_bias;
+	float* layer1_weight;
+	float* layer1_bias;
+
+	cudaMallocManaged((void**)&minibatch_image_data, minibatch_size * mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM * sizeof(float));
+	cudaMallocManaged((void**)&minibatch_label_data, minibatch_size * mnist_loader::CLASS_SIZE * sizeof(float));
+	cudaMallocManaged((void**)&test_image_data, test_size * mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM * sizeof(float));
+	cudaMallocManaged((void**)&test_label_data, test_size * mnist_loader::CLASS_SIZE * sizeof(float));
+
+	cudaMallocManaged((void**)&minibatch_hidden_data_pre, minibatch_size * hidden_size * sizeof(float));
+	cudaMallocManaged((void**)&minibatch_hidden_data, minibatch_size * hidden_size * sizeof(float));
+	cudaMallocManaged((void**)&minibatch_hidden_error, minibatch_size * hidden_size * sizeof(float));
+	cudaMallocManaged((void**)&minibatch_output_data_pre, minibatch_size * output_size * sizeof(float));
+	cudaMallocManaged((void**)&minibatch_output_data, minibatch_size * output_size * sizeof(float));
+	cudaMallocManaged((void**)&minibatch_output_error, minibatch_size * output_size * sizeof(float));
+	cudaMallocManaged((void**)&test_hidden_data_pre, test_size * hidden_size * sizeof(float));
+	cudaMallocManaged((void**)&test_hidden_data, test_size * hidden_size * sizeof(float));
+	cudaMallocManaged((void**)&test_hidden_error, test_size * hidden_size * sizeof(float));
+	cudaMallocManaged((void**)&test_output_data_pre, test_size * output_size * sizeof(float));
+	cudaMallocManaged((void**)&test_output_data, test_size * output_size * sizeof(float));
+	cudaMallocManaged((void**)&test_output_error, test_size * output_size * sizeof(float));
+
+	cudaMallocManaged((void**)&layer0_weight, input_size * hidden_size * sizeof(float));
+	cudaMallocManaged((void**)&layer0_bias, hidden_size * sizeof(float));
+	cudaMallocManaged((void**)&layer1_weight, hidden_size * output_size * sizeof(float));
+	cudaMallocManaged((void**)&layer1_bias, output_size * sizeof(float));
 	utils::random_init(layer0_weight, input_size * hidden_size);
 	utils::random_init(layer0_bias, hidden_size);
 	utils::random_init(layer1_weight, hidden_size * output_size);
@@ -289,20 +312,20 @@ int main() {
 		}
 	}
 
-	free(minibatch_image_data);
-	free(minibatch_label_data);
-	free(minibatch_hidden_data);
-	free(minibatch_output_data);
-	free(minibatch_hidden_data_pre);
-	free(minibatch_output_data_pre);
-	free(test_image_data);
-	free(test_label_data);
-	free(test_hidden_data);
-	free(test_output_data);
-	free(test_hidden_data_pre);
-	free(test_output_data_pre);
-	free(layer0_weight);
-	free(layer0_bias);
-	free(layer1_weight);
-	free(layer1_bias);
+	cudaFree(minibatch_image_data);
+	cudaFree(minibatch_label_data);
+	cudaFree(minibatch_hidden_data);
+	cudaFree(minibatch_output_data);
+	cudaFree(minibatch_hidden_data_pre);
+	cudaFree(minibatch_output_data_pre);
+	cudaFree(test_image_data);
+	cudaFree(test_label_data);
+	cudaFree(test_hidden_data);
+	cudaFree(test_output_data);
+	cudaFree(test_hidden_data_pre);
+	cudaFree(test_output_data_pre);
+	cudaFree(layer0_weight);
+	cudaFree(layer0_bias);
+	cudaFree(layer1_weight);
+	cudaFree(layer1_bias);
 }
