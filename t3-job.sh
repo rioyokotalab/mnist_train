@@ -5,5 +5,6 @@
 #$ -N ykt-mnist-training
 
 . /etc/profile.d/modules.sh
+module load cuda
 
 ./mnist_train_cpu
