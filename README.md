@@ -29,7 +29,11 @@ or
 ```
 qsub t3-job.sh
 ```
-on TSUBAME3.0
+on TSUBAME3.0 or
+```
+sbatch ykt-job.sh
+```
+on Yokota cluster
 
 ## 学習器構造
 ### ネットワーク
