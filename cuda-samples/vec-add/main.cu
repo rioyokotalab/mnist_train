@@ -24,35 +24,28 @@ __global__ void vec_add_kernel(float* const C, const float* const A, const float
 
 int main() {
 	// alloc
-	float* const hA = (float*)malloc(sizeof(float) * N);
-	float* const hB = (float*)malloc(sizeof(float) * N);
-	float* const hC = (float*)malloc(sizeof(float) * N);
 	float* const correct = (float*)malloc(sizeof(float) * N);
-	float *dA, *dB, *dC;
-	cudaMalloc((void**)&dA, sizeof(float) * N);
-	cudaMalloc((void**)&dB, sizeof(float) * N);
-	cudaMalloc((void**)&dC, sizeof(float) * N);
+	float *A, *B, *C;
+	cudaMallocManaged((void**)&A, sizeof(float) * N);
+	cudaMallocManaged((void**)&B, sizeof(float) * N);
+	cudaMallocManaged((void**)&C, sizeof(float) * N);
 
 	// init
-	rand_array(hA, N);
-	rand_array(hB, N);
-	for (unsigned long i = 0; i < N; i++) correct[i] = hA[i] + hB[i];
-
-	// copy to device
-	cudaMemcpy(dA, hA, sizeof(float) * N, cudaMemcpyDefault);
-	cudaMemcpy(dB, hB, sizeof(float) * N, cudaMemcpyDefault);
+	rand_array(A, N);
+	rand_array(B, N);
+	for (unsigned long i = 0; i < N; i++) correct[i] = A[i] + B[i];
 
 	// run kernel
-	vec_add_kernel<<<(N + block_size - 1) / block_size, block_size>>>(dC, dA, dB, N);
+	vec_add_kernel<<<(N + block_size - 1) / block_size, block_size>>>(C, A, B, N);
 
 	// copy to host
-	cudaMemcpy(hC, dC, sizeof(float) * N, cudaMemcpyDefault);
+	cudaMemcpy(C, C, sizeof(float) * N, cudaMemcpyDefault);
 
 	// check
 	unsigned long num_passed = 0;
 	for (unsigned long i = 0; i < N; i++) {
-		if (std::abs(correct[i] - hC[i]) > epsilon) {
-			printf("FAILED : [%7lu] C = %e, correct = %e, error = %e\n", i, hC[i], correct[i], std::abs(correct[i] - hC[i]));
+		if (std::abs(correct[i] - C[i]) > epsilon) {
+			printf("FAILED : [%7lu] C = %e, correct = %e, error = %e\n", i, C[i], correct[i], std::abs(correct[i] - C[i]));
 			continue;
 		}
 		num_passed++;
@@ -60,11 +53,8 @@ int main() {
 	printf("%5lu / %5lu passed\n", num_passed, N);
 
 	// free
-	cudaFree(dA);
-	cudaFree(dB);
-	cudaFree(dC);
-	free(hA);
-	free(hB);
-	free(hC);
+	cudaFree(A);
+	cudaFree(B);
+	cudaFree(C);
 	free(correct);
 }
