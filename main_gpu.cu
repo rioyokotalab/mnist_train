@@ -308,7 +308,7 @@ int main() {
 			const auto train_loss = compute_loss(minibatch_output_data, minibatch_label_data, output_size, minibatch_size);
 			const auto test_acc = compute_accuracy(test_output_data, test_label_data, output_size, minibatch_size);
 			const auto test_loss = compute_loss(test_output_data, test_label_data, output_size, minibatch_size);
-			std::printf("[%6lu] train/acc = %.3f %, train/loss = %e, test/acc = %.3f %, test/loss = %e\n", i, train_acc * 100.0f, train_loss, test_acc * 100.0f, test_loss);
+			std::printf("[%6lu] train/acc = %.3f %, train/loss = %e, test/acc = %.3f %, test/loss = %e\n", i + 1, train_acc * 100.0f, train_loss, test_acc * 100.0f, test_loss);
 		}
 	}
 
