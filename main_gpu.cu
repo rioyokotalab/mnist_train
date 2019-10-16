@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <cmath>
+#include <chrono>
 #include <mnist.hpp>
 #include <utils.hpp>
 
@@ -208,6 +209,8 @@ int main() {
 		test_data.copy(i, test_image_data + i * mnist_loader::IMAGE_DIM * mnist_loader::IMAGE_DIM, test_label_data + i * mnist_loader::CLASS_SIZE);
 	}
 
+	const auto start_clock = std::chrono::system_clock::now();
+
 	// training loop
 	for (std::size_t i = 0; i < num_iterations; i++) {
 		// load minibatch
@@ -269,6 +272,8 @@ int main() {
 		update_bias(layer0_bias, minibatch_hidden_error, hidden_size, minibatch_size, learning_rate);
 
 		if (i % print_info_interval == (print_info_interval - 1)) {
+			const auto end_clock = std::chrono::system_clock::now();
+			const auto elapsed_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_clock - start_clock).count() / 1000lu;
 			matmul(
 				test_hidden_data_pre,
 				layer0_weight,
@@ -308,7 +313,7 @@ int main() {
 			const auto train_loss = compute_loss(minibatch_output_data, minibatch_label_data, output_size, minibatch_size);
 			const auto test_acc = compute_accuracy(test_output_data, test_label_data, output_size, minibatch_size);
 			const auto test_loss = compute_loss(test_output_data, test_label_data, output_size, minibatch_size);
-			std::printf("[%6lu] train/acc = %.3f %%, train/loss = %e, test/acc = %.3f %%, test/loss = %e\n", i + 1, train_acc * 100.0f, train_loss, test_acc * 100.0f, test_loss);
+			std::printf("[%6luiters : %6lus] train/acc = %.3f %%, train/loss = %e, test/acc = %.3f %%, test/loss = %e\n", i + 1, elapsed_time, train_acc * 100.0f, train_loss, test_acc * 100.0f, test_loss);
 		}
 	}
 
