@@ -38,8 +38,7 @@ int main() {
 	// run kernel
 	vec_add_kernel<<<(N + block_size - 1) / block_size, block_size>>>(C, A, B, N);
 
-	// copy to host
-	cudaMemcpy(C, C, sizeof(float) * N, cudaMemcpyDefault);
+	cudaDeviceSynchronize();
 
 	// check
 	unsigned long num_passed = 0;
